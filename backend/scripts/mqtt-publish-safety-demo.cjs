@@ -4,6 +4,8 @@
  *
  * Mạch ESP: broker = IP LAN laptop (đừng localhost trên MCU). Plain = WiFiClient + 1883; MQTTS = WiFiClientSecure + 8883 + CA — đừng trộn TLS với cổng 1883.
  *
+ * JSON publish: khuyến nghị {\"device_id\":\"...\",\"temp\":n,\"gas\":n} (snake_case). Backend chấp nhận thêm camelCase \"deviceId\".
+ *
  * Chuẩn bị: device_id phải đã có trên server (vd. BOOTSTRAP_DEVICES trong .env).
  *
  * Chạy từ thư mục backend (để đọc MQTT_* giống Nest):

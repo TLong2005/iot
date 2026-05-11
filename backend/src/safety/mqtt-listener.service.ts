@@ -84,7 +84,9 @@ export class MqttListenerService implements OnModuleInit, OnModuleDestroy {
       this.log.warn('Invalid JSON on sensors/safety');
       return;
     }
-    const dto = plainToInstance(SensorPayloadDto, parsed);
+    const dto = plainToInstance(SensorPayloadDto, parsed, {
+      enableImplicitConversion: true,
+    });
     const errors = await validate(dto);
     if (errors.length) {
       this.log.warn(`Validation failed: ${JSON.stringify(errors)}`);
