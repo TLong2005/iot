@@ -2,6 +2,8 @@
  * Gửi một bản tin giống firmware: publish JSON lên MQTT topic `sensors/safety`.
  * Backend subscribe topic này và gọi chung SensorIngestService với POST /safety/sensor (khi bật HTTP test).
  *
+ * Mạch ESP: broker = IP LAN laptop (đừng localhost trên MCU). Plain = WiFiClient + 1883; MQTTS = WiFiClientSecure + 8883 + CA — đừng trộn TLS với cổng 1883.
+ *
  * Chuẩn bị: device_id phải đã có trên server (vd. BOOTSTRAP_DEVICES trong .env).
  *
  * Chạy từ thư mục backend (để đọc MQTT_* giống Nest):

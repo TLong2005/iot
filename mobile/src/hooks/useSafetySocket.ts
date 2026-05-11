@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { io, Socket } from 'socket.io-client';
-import { isSkipDevicePairing } from '../config/demo';
+import { getDemoCredentials, isSkipDevicePairing } from '../config/demo';
 import type { PairingCredentials } from '../storage/pairedDevice';
 import {
   SafetyEmergencyPayload,
@@ -52,16 +52,6 @@ export function resolveSocketBaseUrl(): string {
   return 'http://127.0.0.1:3000';
 }
 
-function isPairingRequired(): boolean {
-  if (isSkipDevicePairing()) {
-    return false;
-  }
-  return (
-    (process.env.EXPO_PUBLIC_PAIRING_REQUIRED ?? 'true').toLowerCase() !==
-    'false'
-  );
-}
-
 type Options = {
   pairing: PairingCredentials;
 };
@@ -77,7 +67,6 @@ export function useSafetySocket(
   const [pairError, setPairError] = useState<string | null>(null);
   const [reading, setReading] = useState<SafetyReadingPayload | null>(null);
   const emergRef = useRef(onEmergency);
-  const needPair = isPairingRequired();
 
   useEffect(() => {
     emergRef.current = onEmergency;
@@ -99,17 +88,17 @@ export function useSafetySocket(
       randomizationFactor: 0.5,
     });
 
+    /** Luôn emit safety:pair để join room device:* khi server bật pairing; khi SKIP demo dùng EXPO_PUBLIC_DEMO_* (khớp BOOTSTRAP_DEVICES). */
     const runPair = () => {
-      if (!needPair) {
-        setPaired(true);
-        setPairError(null);
-        return;
-      }
+      const { deviceId, pairingSecret: secret } = isSkipDevicePairing()
+        ? getDemoCredentials()
+        : { deviceId: pairDeviceId, pairingSecret };
+
       socket.emit(
         'safety:pair',
         {
-          deviceId: pairDeviceId,
-          pairingSecret,
+          deviceId,
+          pairingSecret: secret,
         },
         (ack: { ok?: boolean; message?: string } | undefined) => {
           if (ack?.ok) {
@@ -162,13 +151,13 @@ export function useSafetySocket(
       socket.removeAllListeners();
       socket.close();
     };
-  }, [baseUrl, needPair, pairDeviceId, pairingSecret]);
+  }, [baseUrl, pairDeviceId, pairingSecret]);
 
   return {
     connected,
     reconnecting,
     connectError,
-    paired: needPair ? paired : true,
+    paired,
     pairError,
     reading,
     socketUrl: `${baseUrl}/safety`,

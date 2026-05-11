@@ -7,8 +7,11 @@ services:
     container_name: iot-mosquitto
     restart: unless-stopped
     ports:
+      # Plaintext MQTT (ESP: WiFiClient + 1883). TLS vào đây sẽ bị Mosquitto từ chối.
       - "1883:1883" # MQTT plaintext (dev/test)
+      # MQTTS (ESP: WiFiClientSecure). Plain MQTT vào đây → lỗi OpenSSL/handshake.
       - "8883:8883" # MQTT over TLS
+      # Mạch LAN: inbound TCP 1883/8883 trên Windows Firewall (script localhost không cần).
     volumes:
       - ./infra/mosquitto/config:/mosquitto/config:ro
       - ./infra/mosquitto/certs:/mosquitto/certs:ro
