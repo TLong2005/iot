@@ -1,0 +1,15 @@
+# Root
+.env
+*.log
+
+# Backend (NestJS)
+backend/node_modules
+backend/dist
+
+# Mobile (Expo)
+mobile/node_modules
+mobile/.expo
+mobile/dist
+
+# Tools
+scripts/node_modules

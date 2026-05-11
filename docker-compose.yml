@@ -1,0 +1,80 @@
+# IoT MVP: broker, queue, DB, pgAdmin
+# Run from repo root. TLS 8883: run infra/mosquitto/certs/generate-certs.ps1 (or .sh) first
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: iot-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883" # MQTT plaintext (dev/test)
+      - "8883:8883" # MQTT over TLS
+    volumes:
+      - ./infra/mosquitto/config:/mosquitto/config:ro
+      - ./infra/mosquitto/certs:/mosquitto/certs:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks:
+      - iot-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: iot-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    networks:
+      - iot-net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: iot-postgres
+    restart: unless-stopped
+    # Host 5433 avoids conflict with a local PostgreSQL on 5432
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-iot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iot_secret_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-iot_mvp}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - iot-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-iot} -d ${POSTGRES_DB:-iot_mvp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: iot-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin_change_me}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - iot-net
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:
+  redis-data:
+  postgres-data:
+  pgadmin-data:
+
+networks:
+  iot-net:
+    driver: bridge
